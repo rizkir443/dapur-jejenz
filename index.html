@@ -66,18 +66,48 @@
     document.getElementById('exportJson').addEventListener('click',()=>download(`dapur-jejenz-${Date.now()}.json`,JSON.stringify(state,null,2),'application/json'));
     document.getElementById('exportCsv').addEventListener('click',()=>{const rows=[['Tanggal','Pelanggan','Status','Item','Subtotal','Diskon','Total','Catatan']];state.orders.forEach(o=>rows.push([new Date(o.createdAt).toLocaleString('id-ID'),o.customer,o.status,o.items.map(i=>`${i.name} ${i.variant} x${i.qty}`).join('; '),o.subtotal,o.discount,o.total,o.note||'']));download(`order-dapur-jejenz-${Date.now()}.csv`,rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n'),'text/csv')});
     document.getElementById('downloadPdf').addEventListener('click',()=>{
-      const orders=state.orders;
-      const total=orders.reduce((s,o)=>s+o.total,0);
-      const rows=orders.length
-        ?orders.map(o=>'<tr><td>'+new Date(o.createdAt).toLocaleString('id-ID')+'</td><td>'+(o.customer||'-').replace(/</g,'&lt;')+'</td><td>'+(o.status||'-')+'</td><td>'+rupiah(o.total)+'</td></tr>').join('')
-        :'<tr><td colspan="4" style="text-align:center;color:#999">Belum ada order</td></tr>';
-      const html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan Dapur Jejenz</title><style>body{font-family:sans-serif;padding:24px;color:#24140c}h1{color:#ef6c00;margin:0 0 8px}.summary{background:#fff7ed;padding:14px 18px;border-radius:12px;border:1px solid #fed7aa;margin:16px 0}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{border:1px solid #ddd;padding:10px;text-align:left;font-size:14px}th{background:#ef6c00;color:#fff}.total{color:#16a34a;font-weight:bold}</style></head><body><h1>Laporan Dapur Jejenz</h1><div class="summary"><p style="margin:0">Total omzet: <span class="total">'+rupiah(total)+'</span></p><p style="margin:4px 0 0">Jumlah order: <b>'+orders.length+'</b></p><p style="margin:4px 0 0;font-size:12px;color:#7c5f4a">Digenerate: '+new Date().toLocaleString('id-ID')+'</p></div><table><tr><th>Tanggal</th><th>Pelanggan</th><th>Status</th><th>Total</th></tr>'+rows+'</table><script>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)});<\/script></body></html>';
-      const w=window.open('','_blank');
-      if(!w){toast('Pop-up diblokir, izinkan pop-up untuk download laporan');return}
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
-    });
+      try {
+        const orders = state.orders || [];
+        const total = orders.reduce(function(s,o){return s + (o.total||0);}, 0);
+        const w = window.open('', '_blank', 'width=800,height=900');
+        if (!w) { alert('Pop-up diblokir! Izinkan pop-up untuk situs ini, lalu coba lagi.'); return; }
+        const d = w.document;
+        d.open();
+        d.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan Dapur Jejenz</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#24140c}h1{color:#ef6c00;margin:0 0 8px}.summary{background:#fff7ed;padding:14px 18px;border-radius:12px;border:1px solid #fed7aa;margin:16px 0}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#ef6c00;color:#fff;padding:10px;text-align:left}td{padding:10px;border-bottom:1px solid #fed7aa}tr:nth-child(even){background:#fff7ed}.total{color:#ef6c00;font-weight:bold;font-size:1.2em}.empty{text-align:center;color:#999;padding:20px}</style></head><body><h1>Laporan Dapur Jejenz</h1>');
+        const div = d.createElement('div');
+        div.className = 'summary';
+        div.innerHTML = '<p><strong>Total omzet:</strong> <span class="total">' + rupiah(total) + '</span></p><p><strong>Jumlah order:</strong> ' + orders.length + '</p><p><strong>Digenerate:</strong> ' + new Date().toLocaleString('id-ID') + '</p>';
+        d.body.appendChild(div);
+        const tbl = d.createElement('table');
+        const thead = d.createElement('thead');
+        thead.innerHTML = '<tr><th>Tanggal</th><th>Customer</th><th>Status</th><th>Total</th></tr>';
+        tbl.appendChild(thead);
+        const tbody = d.createElement('tbody');
+        if (orders.length === 0) {
+          const tr = d.createElement('tr');
+          tr.innerHTML = '<td colspan="4" class="empty">Belum ada order</td>';
+          tbody.appendChild(tr);
+        } else {
+          orders.forEach(function(o) {
+            const tr = d.createElement('tr');
+            const td1 = d.createElement('td'); td1.textContent = new Date(o.createdAt).toLocaleString('id-ID');
+            const td2 = d.createElement('td'); td2.textContent = o.customer || '-';
+            const td3 = d.createElement('td'); td3.textContent = o.status || '-';
+            const td4 = d.createElement('td'); td4.textContent = rupiah(o.total || 0);
+            tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4);
+            tbody.appendChild(tr);
+          });
+        }
+        tbl.appendChild(tbody);
+        d.body.appendChild(tbl);
+        d.write('</body></html>');
+        d.close();
+        setTimeout(function(){ w.focus(); w.print(); }, 300);
+      } catch (err) {
+        alert('Gagal generate laporan: ' + err.message);
+        console.error(err);
+      }
+    }));
     document.getElementById('themeToggle').addEventListener('click',()=>{document.body.classList.toggle('dark');localStorage.setItem(themeKey,document.body.classList.contains('dark')?'dark':'light');document.getElementById('themeToggle').textContent=document.body.classList.contains('dark')?'Mode Terang':'Mode Gelap'});
     document.getElementById('loginAdmin').addEventListener('click',()=>{if(document.getElementById('adminPin').value!==adminPin)return toast('PIN admin salah');isAdmin=true;document.getElementById('adminLogin').style.display='none';document.getElementById('adminContent').style.display='block';document.getElementById('adminTab').style.display='';if(document.getElementById('adminPinHint'))document.getElementById('adminPinHint').style.display='';toast('Admin aktif')});
     document.getElementById('logoutAdmin').addEventListener('click',()=>{isAdmin=false;document.getElementById('adminLogin').style.display='grid';document.getElementById('adminContent').style.display='none';document.getElementById('adminPin').value='';document.querySelector('.tab[data-view="order"]').click();toast('Admin logout')});
