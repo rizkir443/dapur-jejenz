@@ -1,0 +1,13 @@
+# Local cache
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Backup files
+*.bak
+*~
