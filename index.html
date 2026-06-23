@@ -107,7 +107,7 @@
         alert('Gagal generate laporan: ' + err.message);
         console.error(err);
       }
-    }));
+    });
     document.getElementById('themeToggle').addEventListener('click',()=>{document.body.classList.toggle('dark');localStorage.setItem(themeKey,document.body.classList.contains('dark')?'dark':'light');document.getElementById('themeToggle').textContent=document.body.classList.contains('dark')?'Mode Terang':'Mode Gelap'});
     document.getElementById('loginAdmin').addEventListener('click',()=>{if(document.getElementById('adminPin').value!==adminPin)return toast('PIN admin salah');isAdmin=true;document.getElementById('adminLogin').style.display='none';document.getElementById('adminContent').style.display='block';document.getElementById('adminTab').style.display='';if(document.getElementById('adminPinHint'))document.getElementById('adminPinHint').style.display='';toast('Admin aktif')});
     document.getElementById('logoutAdmin').addEventListener('click',()=>{isAdmin=false;document.getElementById('adminLogin').style.display='grid';document.getElementById('adminContent').style.display='none';document.getElementById('adminPin').value='';document.querySelector('.tab[data-view="order"]').click();toast('Admin logout')});
